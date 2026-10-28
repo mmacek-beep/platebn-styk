@@ -1,0 +1,1318 @@
+<!DOCTYPE html>
+<html lang="cs" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Platební styk - Interaktivní Test</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0284c7',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            800: '#075985',
+                            900: '#0c4a6e',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Font Inter CDN -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+            .print-only {
+                display: block !important;
+            }
+            body {
+                background: white !important;
+                color: black !important;
+            }
+            .print-card {
+                border: 1px solid #ccc !important;
+                page-break-inside: avoid;
+            }
+        }
+        .print-only {
+            display: none;
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col selection:bg-brand-500 selection:text-white pb-12">
+
+    <!-- HEADER / NAVBAR -->
+    <header class="no-print bg-slate-800/90 backdrop-blur border-b border-slate-700 sticky top-0 z-30 px-4 py-3 shadow-lg">
+        <div class="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-4">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-indigo-600 flex items-center justify-center font-bold text-white text-xl shadow-md">
+                    💳
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg leading-tight text-white">Platební styk</h1>
+                    <p class="text-xs text-slate-400">Interaktivní testovací aplikace pro OA (Účetnictví 3. ročník)</p>
+                </div>
+            </div>
+
+            <!-- CONTROLS ROW -->
+            <div class="flex flex-wrap items-center gap-2">
+                <!-- Sound Toggle -->
+                <button id="soundToggleBtn" onclick="toggleSound()" class="p-2.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-200 text-sm transition flex items-center space-x-1" title="Zapnout/Vypnout zvukové efekty">
+                    <span id="soundIcon">🔊</span>
+                </button>
+
+                <!-- Filter Errors -->
+                <button id="filterErrorsBtn" onclick="toggleErrorFilter()" class="px-3 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs sm:text-sm font-medium transition flex items-center space-x-1 border border-slate-600">
+                    <span>⚠️</span>
+                    <span id="filterBtnText">Filtr chyb (0)</span>
+                </button>
+
+                <!-- Reshuffle -->
+                <button onclick="reshuffleQuestions()" class="px-3 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs sm:text-sm font-medium transition flex items-center space-x-1 border border-slate-600" title="Proházet pořadí otázek">
+                    <span>🔀</span>
+                    <span class="hidden sm:inline">Proházet</span>
+                </button>
+
+                <!-- Restart -->
+                <button onclick="restartQuiz()" class="px-3 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs sm:text-sm font-medium transition flex items-center space-x-1 border border-slate-600">
+                    <span>🔄</span>
+                    <span class="hidden sm:inline">Restart</span>
+                </button>
+
+                <!-- Print Protocol -->
+                <button onclick="openPrintModal()" class="px-3.5 py-2 rounded-lg bg-brand-600 hover:bg-brand-500 text-white text-xs sm:text-sm font-medium transition flex items-center space-x-1 shadow">
+                    <span>🖨️</span>
+                    <span>Protokol</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTAINER -->
+    <main class="no-print max-w-6xl mx-auto px-4 mt-6 flex-grow w-full grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- LEFT/TOP: DASHBOARD & STATS (4 cols) -->
+        <div class="lg:col-span-4 space-y-6">
+            
+            <!-- PROGRESS & SCORE CARD -->
+            <div class="bg-slate-800 rounded-2xl p-5 border border-slate-700/80 shadow-md">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Průběh testu</span>
+                    <span id="questionCounterText" class="text-xs font-bold bg-brand-900/60 text-brand-300 px-2.5 py-1 rounded-full border border-brand-700/50">
+                        Otázka 1 / 40
+                    </span>
+                </div>
+
+                <!-- Progress Bar -->
+                <div class="w-full bg-slate-700 h-2.5 rounded-full overflow-hidden mb-4">
+                    <div id="progressBar" class="bg-gradient-to-r from-brand-500 to-indigo-500 h-full w-0 transition-all duration-300"></div>
+                </div>
+
+                <!-- Score Grid -->
+                <div class="grid grid-cols-3 gap-2 text-center mb-4">
+                    <div class="bg-slate-900/60 p-2.5 rounded-xl border border-slate-700/50">
+                        <div class="text-xs text-slate-400 mb-0.5">Správně</div>
+                        <div id="statCorrect" class="text-lg font-bold text-emerald-400">0</div>
+                    </div>
+                    <div class="bg-slate-900/60 p-2.5 rounded-xl border border-slate-700/50">
+                        <div class="text-xs text-slate-400 mb-0.5">Chybně</div>
+                        <div id="statWrong" class="text-lg font-bold text-rose-400">0</div>
+                    </div>
+                    <div class="bg-slate-900/60 p-2.5 rounded-xl border border-slate-700/50">
+                        <div class="text-xs text-slate-400 mb-0.5">Úspěšnost</div>
+                        <div id="statAccuracy" class="text-lg font-bold text-brand-300">0 %</div>
+                    </div>
+                </div>
+
+                <!-- OA GRADING SCALE CARD -->
+                <div class="bg-slate-900/80 rounded-xl p-3 border border-slate-700/60 flex items-center justify-between">
+                    <div>
+                        <div class="text-xs text-slate-400">Klasifikace OA:</div>
+                        <div id="oaGradeText" class="text-base font-bold text-amber-400">Příprava...</div>
+                    </div>
+                    <div id="oaGradeBadge" class="w-10 h-10 rounded-full bg-slate-800 border-2 border-amber-400 flex items-center justify-center font-extrabold text-amber-400 text-lg shadow">
+                        -
+                    </div>
+                </div>
+            </div>
+
+            <!-- QUESTION MAP (40 BUTTONS GRID) -->
+            <div class="bg-slate-800 rounded-2xl p-5 border border-slate-700/80 shadow-md">
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="text-sm font-bold text-slate-200">Mapa otázek (40)</h3>
+                    <span class="text-[11px] text-slate-400">Kliknutím přejdete</span>
+                </div>
+                <div id="questionMapGrid" class="grid grid-cols-8 sm:grid-cols-10 lg:grid-cols-8 gap-1.5">
+                    <!-- Dynamic Grid 1-40 -->
+                </div>
+                <div class="mt-4 pt-3 border-t border-slate-700/60 flex items-center justify-around text-[11px] text-slate-400">
+                    <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-slate-700 inline-block"></span> Nevyřešeno</span>
+                    <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span> Správně</span>
+                    <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-rose-500 inline-block"></span> Chyba</span>
+                </div>
+            </div>
+
+            <!-- KEYBOARD SHORTCUTS HINT -->
+            <div class="bg-slate-800/60 rounded-xl p-3.5 border border-slate-700/50 text-xs text-slate-400 space-y-1">
+                <div class="font-semibold text-slate-300 mb-1">⌨️ Klávesové zkratky:</div>
+                <div class="flex justify-between"><span>Výběr možnosti:</span> <span class="text-slate-200 font-mono">A, B, C, D</span> nebo <span class="text-slate-200 font-mono">1, 2, 3, 4</span></div>
+                <div class="flex justify-between"><span>Předchozí / Další:</span> <span class="text-slate-200 font-mono">← / →</span></div>
+                <div class="flex justify-between"><span>Potvrdit / Přeskočit:</span> <span class="text-slate-200 font-mono">Enter</span></div>
+            </div>
+
+        </div>
+
+        <!-- RIGHT/BOTTOM: QUESTION AREA (8 cols) -->
+        <div class="lg:col-span-8 space-y-6">
+
+            <!-- MAIN QUESTION CARD -->
+            <div id="questionCard" class="bg-slate-800 rounded-2xl p-6 border border-slate-700/80 shadow-lg relative flex flex-col justify-between min-h-[460px]">
+                
+                <div>
+                    <!-- Category & Hotkey info -->
+                    <div class="flex items-center justify-between gap-2 mb-4">
+                        <span id="questionCategory" class="px-3 py-1 rounded-full text-xs font-semibold bg-brand-900/80 text-brand-300 border border-brand-700/60">
+                            Kategorie
+                        </span>
+                        <span class="text-xs text-slate-400 font-mono bg-slate-900/60 px-2 py-0.5 rounded border border-slate-700">
+                            Otázka <span id="currentQIndexNumber">1</span> z 40
+                        </span>
+                    </div>
+
+                    <!-- Question Stem -->
+                    <h2 id="questionText" class="text-lg sm:text-xl font-bold text-slate-100 leading-snug mb-6">
+                        Načítání otázky...
+                    </h2>
+
+                    <!-- Options Grid (A, B, C, D) -->
+                    <div id="optionsContainer" class="space-y-3">
+                        <!-- Dynamic Options -->
+                    </div>
+                </div>
+
+                <!-- EXPLANATION / CITATION BOX (Hidden until answered) -->
+                <div id="explanationBox" class="hidden mt-6 p-4 rounded-xl bg-slate-900/90 border border-slate-700 space-y-2 text-sm">
+                    <div class="flex items-center space-x-2 font-bold text-brand-400">
+                        <span>💡 Vysvětlení a účetní logika:</span>
+                    </div>
+                    <p id="explanationText" class="text-slate-300 leading-relaxed"></p>
+                    <div class="pt-2 border-t border-slate-800 text-xs text-slate-400 italic">
+                        <span class="font-semibold text-slate-300 not-italic">📖 Citace z materiálu "12_platební styk":</span>
+                        <blockquote id="citationText" class="mt-1 pl-3 border-l-2 border-brand-500 text-slate-300"></blockquote>
+                    </div>
+                </div>
+
+                <!-- NAVIGATION BUTTONS FOOTER -->
+                <div class="mt-8 pt-4 border-t border-slate-700/60 flex items-center justify-between gap-3">
+                    <button id="prevBtn" onclick="navigateQuestion(-1)" class="px-4 py-2.5 rounded-xl bg-slate-700 hover:bg-slate-600 disabled:opacity-40 disabled:hover:bg-slate-700 text-slate-200 text-sm font-semibold transition flex items-center space-x-2">
+                        <span>←</span>
+                        <span>Předchozí</span>
+                    </button>
+
+                    <button id="nextBtn" onclick="navigateQuestion(1)" class="px-5 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-sm font-semibold transition shadow flex items-center space-x-2">
+                        <span>Další</span>
+                        <span>→</span>
+                    </button>
+                </div>
+
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- PRINTABLE PROTOCOL MODAL -->
+    <div id="printModal" class="no-print fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-2xl w-full p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between pb-4 border-b border-slate-800">
+                <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                    <span>🖨️</span> Tiskový protokol výsledků
+                </h3>
+                <button onclick="closePrintModal()" class="text-slate-400 hover:text-white text-xl font-bold">&times;</button>
+            </div>
+
+            <div id="protocolPreviewContent" class="py-4 space-y-4 text-sm text-slate-300">
+                <!-- Dynamic Summary content -->
+            </div>
+
+            <div class="pt-4 border-t border-slate-800 flex justify-end space-x-3">
+                <button onclick="closePrintModal()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium">Zavřít</button>
+                <button onclick="window.print()" class="px-5 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-bold shadow flex items-center gap-2">
+                    <span>🖨️</span> Vytisknout / Uložit PDF
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- HIDDEN PRINT-ONLY CONTAINER -->
+    <div id="printContainer" class="print-only p-8 bg-white text-black font-sans">
+        <!-- Generates on fly for printing -->
+    </div>
+
+    <script>
+        // ==========================================
+        // 40 QUESTIONS DATA - BALANCED OPTIONS LENGTH & DISPERSED ANSWERS
+        // Total correct answers: Exactly 10x A, 10x B, 10x C, 10x D
+        // ==========================================
+        const questions = [
+            {
+                "kategorie": "Hotovostní platební styk - Použití a účet",
+                "otazka": "Pro které typy výdajů se v podniku přednostně využívá hotovostní platební styk a na kterém účtu se účtuje?",
+                "moznosti": [
+                    "Pro nákupy dlouhodobého nemovitého majetku a budov; účtuje se na aktivním majetkovém účtu 021.",
+                    "Pro pravidelnou měsíční výplatu mezd všem zaměstnancům; účtuje se na pasivním závazkovém účtu 331.",
+                    "Pro proplácení cestovních účtů a drobné nákupy v obchodě; účtuje se na rozvahovém účtu 211.",
+                    "Pro čtvrtletní úhrady daně z přidané hodnoty státu; účtuje se na zúčtovacím daňovém účtu 343."
+                ],
+                "spravnaIndex": 2,
+                "vysvetleni": "Hotovostní platební styk slouží k proplácení cestovních účtů a drobným nákupům (např. kancelářské potřeby, benzín) a účtuje se na účtu 211 – Pokladna.",
+                "citace": "Hotovostní platební styk: Proplácení cestovních účtů, drobné nákupy v obchodě (např. nákup kancelářských potřeb, benzínu …) … v hotovosti. Pokladna (účet 211)."
+            },
+            {
+                "kategorie": "Pokladna - Pokladník a doklady",
+                "otazka": "Kdo odpovídá za hotovost v pokladně a na základě kterých účetních dokladů provádí příjem a výdej peněz?",
+                "moznosti": [
+                    "Odpovídá pokladník s hmotnou odpovědností na základě příjmových a výdajových pokladních dokladů.",
+                    "Odpovídá hlavní účetní podniku na základě schválených přijatých a vydaných dodavatelských faktur.",
+                    "Odpovídá člen inventarizační komise na základě sestaveného výkazového zápisu o fyzické inventuře.",
+                    "Odpovídá auditor podniku na základě schválených vnitřních zúčtovacích dokladů a daňových přiznání."
+                ],
+                "spravnaIndex": 0,
+                "vysvetleni": "Pokladnu vede pokladník, který má k hotovosti hmotnou odpovědnost. Příjem a výdej peněz provádí na základě PPD a VPD.",
+                "citace": "Pokladna (účet 211): Vede pokladník – má hmotnou odpovědnost za hotovost v pokladně. Provádí příjem a výdej peněz na podkladě PPD a VPD."
+            },
+            {
+                "kategorie": "Pokladna - Analytická evidence",
+                "otazka": "Jakým způsobem se vede analytická evidence k účtu 211 – Pokladna v podnikovém účetnictví?",
+                "moznosti": [
+                    "Vede se výhradně podle jednotlivých odběratelů a dodavatelů v pomocném účetním deníku podniku.",
+                    "Vede se výhradně podle jednotlivých zaměstnanců majících nárok na měsíční stravenky od podniku.",
+                    "Vede se v hlavní knize s měsíčním přeceňováním na základě stanoveného indexu růstu cen v ČR.",
+                    "Vede se v pokladní knize s evidencí pohybů peněz a v samostatných valutových pokladnách podniku."
+                ],
+                "spravnaIndex": 3,
+                "vysvetleni": "Analytická evidence k účtu 211 zahrnuje pokladní knihu (záznamy o pohybu peněz) a valutové pokladny členěné podle jednotlivých cizích měn (CZK, USD, EUR...).",
+                "citace": "Analytická evidence … pokladní kniha (vede pokladník, obsahuje záznamy o pohybu peněz), valutové pokladny (podle měn – CZK, $, Euro …)."
+            },
+            {
+                "kategorie": "Peníze na cestě - Funkce účtu 261",
+                "otazka": "K jakému účelu v účetnictví slouží účet 261 – Peníze na cestě a které typické situace řeší?",
+                "moznosti": [
+                    "Slouží k trvalému uchovávání dlouhodobých peněžních rezerv podniku pro případ nečekané krize.",
+                    "Slouží k překlenutí časového nesouladu při převodech peněžních prostředků mezi jednotlivými účty.",
+                    "Slouží k evidenci nedobytných pohledávek za zahraničními odběrateli podniku po lhůtě splatnosti.",
+                    "Slouží k výpočtu povinných odvodů na zdravotní a sociální pojištění zaměstnanců u pojišťoven."
+                ],
+                "spravnaIndex": 1,
+                "vysvetleni": "Účet 261 překlenuje časový nesoulad při převodech peněz (např. výběr z BÚ do pokladny, odvod z pokladny na BÚ, převod mezi BÚ a úvěrem).",
+                "citace": "Peníze na cestě (účet 261): Překlenutí časového nesouladu při převodech peněžních prostředků. Např.: … výběr peněz z BÚ do pokladny, odvod peněz z pokladny na BÚ..."
+            },
+            {
+                "kategorie": "Peníze na cestě - Účtování převodu",
+                "otazka": "Jak se účtuje poskytnutí krátkodobého bankovního úvěru (VÚÚ) a jeho následné připsání na běžný účet (VBÚ)?",
+                "moznosti": [
+                    "VÚÚ poskytnutí úvěru: 221 / 261; VBÚ připsání úvěru na běžný účet: 261 / 231.",
+                    "VÚÚ poskytnutí úvěru: 231 / 221; VBÚ připsání úvěru na běžný účet: 261 / 221.",
+                    "VÚÚ poskytnutí úvěru: 261 / 221; VBÚ připsání úvěru na běžný účet: 231 / 261.",
+                    "VÚÚ poskytnutí úvěru: 261 / 231; VBÚ připsání úvěru na běžný účet: 221 / 261."
+                ],
+                "spravnaIndex": 3,
+                "vysvetleni": "Na základě výpisu z úvěrového účtu (VÚÚ): 261 / 231. Na základě výpisu z běžného účtu (VBÚ): 221 / 261.",
+                "citace": "Příklad: VÚÚ – banka poskytla podniku krátkodobý úvěr (261 / 231); VBÚ – úvěr připsaný na BÚ (221 / 261)."
+            },
+            {
+                "kategorie": "Inventarizace pokladny - Periodicita a doklad",
+                "otazka": "Jak často se musí provádět inventarizace pokladní hotovosti a jaký doklad vyhotovuje inventarizační komise?",
+                "moznosti": [
+                    "Musí se provádět alespoň 1x za rok a vyhotovuje se zápis o inventarizaci pokladny (výčetka podniku).",
+                    "Musí se provádět minimálně jednou za měsíc a vyhotovuje se daňové přiznání k pokladní hotovosti.",
+                    "Musí se provádět každých pět let a vyhotovuje se výpis z běžného účtu s oficiálním razítkem banky.",
+                    "Musí se provádět výhradně při výměně pokladníka a vyhotovuje se běžný příjmový pokladní doklad."
+                ],
+                "spravnaIndex": 0,
+                "vysvetleni": "Inventarizace pokladní hotovosti se provádí alespoň 1x za rok. Inventarizační komise vyhotovuje zápis o inventarizaci (výčetku).",
+                "citace": "Inventarizace pokladní hotovosti: Alespoň 1x za rok. Provádí inventarizační komise – vyhotovuje zápis o inventarizaci pokladny (výčetka)."
+            },
+            {
+                "kategorie": "Inventarizace pokladny - Výčetka",
+                "otazka": "Co přesně obsahuje výčetka sestavená inventarizační komisí při inventarizaci pokladny?",
+                "moznosti": [
+                    "Obsahuje výhradně přehled všech nezaplacených dodavatelských faktur po lhůtě splatnosti v podniku.",
+                    "Obsahuje jmenný seznam zaměstnanců podniku, kterým byly v daném měsíci vydány stravenky do rukou.",
+                    "Obsahuje podrobný přehled jednotlivých druhů bankovek a mincí v pokladně a jejich přesný počet.",
+                    "Obsahuje přehled všech bankovních účtů podniku a přesnou výši jejich ročních úrokových sazeb p.a."
+                ],
+                "spravnaIndex": 2,
+                "vysvetleni": "Výčetka obsahuje podrobný soupis druhů bankovek a mincí v pokladně a jejich počet pro zjištění skutečné hotovosti.",
+                "citace": "Výčetka – druhy bankovek a mincí, jejich počet. Zjistí se skutečná hotovost a porovná se s účetním stavem."
+            },
+            {
+                "kategorie": "Inventarizace pokladny - Manko a přebytek",
+                "otazka": "Kdy dochází k manku v pokladně, za jaké podmínky je daňově uznatelné a kdy vzniká přebytek?",
+                "moznosti": [
+                    "Manko vzniká při shodě stavů; je neuznatelné; přebytek vzniká, pokud skutečný stav chybí.",
+                    "Manko je skutečný stav < účetní (s policií daňové); přebytek je skutečný stav > účetní.",
+                    "Manko vzniká, pokud skutečnost přesahuje účetnictví; přebytek, pokud je stav nižší.",
+                    "Manko vzniká při krádeži bez policie; přebytek vzniká výhradně při chybě bankovního účtu."
+                ],
+                "spravnaIndex": 1,
+                "vysvetleni": "Manko = skutečný stav < účetní stav (při krádeži potvrzené policií jde o daňově uznatelný náklad). Přebytek = skutečný stav > účetní stav.",
+                "citace": "Skutečný stav < stav v účetnictví -> manko (krádež + potvrzení policie … daňově uznatelný náklad). Skutečný stav > stav v účetnictví -> přebytek."
+            },
+            {
+                "kategorie": "Inventarizace pokladny - Účtování manka",
+                "otazka": "Jakým účetním zápisem se na základě vnitřního dokladu účtuje manko v pokladně a jeho předpis zaměstnanci?",
+                "moznosti": [
+                    "VÚD manko v pokladně: 569 / 211 a VÚD předpis manka k úhradě zaměstnanci: 335 / 668.",
+                    "VÚD manko v pokladně: 211 / 569 a VÚD předpis manka k úhradě zaměstnanci: 668 / 335.",
+                    "VÚD manko v pokladně: 549 / 211 a VÚD předpis manka k úhradě zaměstnanci: 331 / 648.",
+                    "VÚD manko v pokladně: 261 / 211 a VÚD předpis manka k úhradě zaměstnanci: 335 / 221."
+                ],
+                "spravnaIndex": 0,
+                "vysvetleni": "VÚD manko v pokladně se účtuje 569 / 211. Předpis manka k úhradě odpovědnému zaměstnanci se účtuje 335 / 668.",
+                "citace": "VÚD – manko v pokladně (569 / 211); VÚD – předpis manka k úhradě (335 / 668)."
+            },
+            {
+                "kategorie": "Inventarizace pokladny - Úhrada a přebytek",
+                "otazka": "Jak se v účetnictví zachytí úhrada manka zaměstnancem a jak se účtuje přebytek peněz v pokladně?",
+                "moznosti": [
+                    "Úhrada manka: 335 / 211 a přebytek v pokladně: 668 / 211 na základě vnitřního dokladu.",
+                    "Úhrada manka: 569 / 335 a přebytek peněz v pokladně: 211 / 569 na základě výpisu.",
+                    "Úhrada manka: 331 / 221 a přebytek peněz v pokladně: 668 / 261 na základě pokladny.",
+                    "Úhrada manka: 211 (221, 331) / 335 a přebytek peněz v pokladně: 211 / 668 na VÚD."
+                ],
+                "spravnaIndex": 3,
+                "vysvetleni": "Úhrada manka zaměstnancem: 211 (221, 331) / 335. Přebytek peněz v pokladně: 211 / 668.",
+                "citace": "VÚD – úhrada manka v pokladně (211 (221, 331) / 335); VÚD – přebytek peněz v pokladně (211 / 668)."
+            },
+            {
+                "kategorie": "Ceniny - Definice a druhy",
+                "otazka": "Jak jsou v účetnictví definovány ceniny (účet 213) a které konkrétní předměty mezi ně spadají?",
+                "moznosti": [
+                    "Jsou dlouhodobým nehmotným majetkem podniku; patří sem patenty, licence a ochranné známky.",
+                    "Jsou krátkodobým finančním majetkem s jmenovitou hodnotou; patří sem známky, stravenky, SIM.",
+                    "Jsou cenovými papíry dlouhodobé povahy; patří sem akciové podíly a emitované dluhopisy.",
+                    "Jsou cizími měnami v pokladně podniku; patří sem výhradně hotovostní bankovky v USD a EUR."
+                ],
+                "spravnaIndex": 1,
+                "vysvetleni": "Ceniny (213) jsou druh krátkodobého finančního majetku mající svou jmenovitou hodnotu (poštovní známky, dálniční známky, stravenky, SIM karty, jízdenky...).",
+                "citace": "Ceniny (účet 213): Druh krátkodobého FM – má svou jmenovitou (nominální) hodnotu (poštovní známky, dálniční známky, stravenky, sim karty, jízdenky, letenky …)."
+            },
+            {
+                "kategorie": "Ceniny - Postup účtování",
+                "otazka": "Jakým účetním předpisem se účtuje nákup cenin na sklad a jejich následný výdej do spotřeby?",
+                "moznosti": [
+                    "Nákup cenin na sklad: 518 / 211 (321); výdej cenin do spotřeby: 213 / 518 v plné hodnotě.",
+                    "Nákup cenin na sklad: 211 / 213; výdej cenin do spotřeby: 213 / 321 v nákupní ceně bez DPH.",
+                    "Nákup cenin na sklad: 213 / 211 (321); výdej do spotřeby: 518 (512, 538, 527) / 213 v ceně.",
+                    "Nákup cenin na sklad: 112 / 211; výdej cenin do spotřeby: 501 / 112 na základě výdejky."
+                ],
+                "spravnaIndex": 2,
+                "vysvetleni": "Nákup cenin: 213 / 211 (nebo 321). Výdej cenin do spotřeby: 518 (případně 512, 538, 527) / 213.",
+                "citace": "Nákup cenin (213 / 211 (321)); Výdej cenin do spotřeby (518 (512, 538, 527) / 213)."
+            },
+            {
+                "kategorie": "Ceniny - Přímý výdej do spotřeby",
+                "otazka": "Jak se účtuje nákup cenin (např. dálniční známky či stravenek), pokud jsou vydány rovnou do spotřeby?",
+                "moznosti": [
+                    "Účtuje se přímým zápisem na nákladový účet a pokladnu/závazky: 518 (512, 538, 527) / 211 (321).",
+                    "Účtuje se vždy nejprve přes majetkový účet 213 a až v následujícím roce se převede na účet 518.",
+                    "Účtuje se přímo na rozvahový účet 261 – Peníze na cestě s následným převodem na bankovní účet.",
+                    "Účtuje se na nákladový účet 501 – Spotřeba materiálu oproti účtu 335 – Pohledávky za zaměstnanci."
+                ],
+                "spravnaIndex": 0,
+                "vysvetleni": "Nákup cenin spojený s přímým vydáním do spotřeby se účtuje bez použití účtu 213 přímo předpisem 518 (512, 538, 527) / 211 (321).",
+                "citace": "Nákup cenin a výdej rovnou do spotřeby: 518 (512, 538, 527) / 211 (321)."
+            },
+            {
+                "kategorie": "Stravenky - Plná úhrada zaměstnavatelem",
+                "otazka": "Na který účet se účtuje příspěvek na stravenky u zaměstnavatele a jak vypadá předpis při plné úhradě?",
+                "moznosti": [
+                    "Účtuje se na nákladový účet 518 – Ostatní služby předpisem 518 / 213 v plné nákupní ceně.",
+                    "Účtuje se na rozvahový účet 335 – Pohledávky za zaměstnancem účetním předpisem 335 / 213.",
+                    "Účtuje se na výsledkový účet 568 – Ostatní finanční náklady účetním předpisem 568 / 221.",
+                    "Účtuje se na nákladový účet 527 – Zákonné sociální náklady účetním předpisem 527 / 213."
+                ],
+                "spravnaIndex": 3,
+                "vysvetleni": "Hodnota stravenky hrazená zaměstnavatelem je daňově účinným nákladem účtovaným na 527 – Zákonné sociální náklady (527 / 213).",
+                "citace": "Hodnota stravenky … daňově účinný náklad (527 – zákonné sociální náklady). Zaměstnavatel hradí celou stravenku … 527 / 213."
+            },
+            {
+                "kategorie": "Stravenky - Limit příspěvku 2026",
+                "otazka": "Kolik činí daňově osvobozený limit příspěvku na stravenku pro rok 2026 a z čeho se vypočítává?",
+                "moznosti": [
+                    "Činí 100,00 Kč a vypočítává se jako 50 % z průměrné hodinové mzdy zaměstnance v daném odvětví.",
+                    "Činí 150,00 Kč a vypočítává se jako 100 % ze základní sazby stravného při tuzemské pracovní cestě.",
+                    "Činí 129,50 Kč a vypočítává se jako 70 % ze stravného na služební cestu (ze základu 185 Kč).",
+                    "Činí 200,00 Kč a stanovuje se pevnou částkou v zákonu o daních z příjmů bez vazby na stravné."
+                ],
+                "spravnaIndex": 2,
+                "vysvetleni": "Limit pro rok 2026 činí 129,50 Kč, což představuje 70 % ze stravného na služební cestu (185 Kč). Do této výše je osvobozen od daně i pojištění.",
+                "citace": "Limit příspěvku zaměstnavatele na stravenku: 129,50 Kč (rok 2026) … 70 % ze stravného na služební cestu (185 Kč). Osvobozený od daně z příjmů u zaměstnance a od ZP a SP."
+            },
+            {
+                "kategorie": "Stravenky - Částka nad limit",
+                "otazka": "Co se stane s částkou příspěvku na stravenku přesahující zákonný limit (např. 20,50 Kč při cenně 150 Kč), pokud celou stravenku platí zaměstnavatel?",
+                "moznosti": [
+                    "Převede se do následujícího roku jako daňově uznatelná dohadná položka pasivní podniku.",
+                    "Započítá se do HM zaměstnance a odvádí se z ní záloha na daň, ZP a SP placené oběma stranami.",
+                    "Je osvobozena od všech daní a započítává se přímo do základního kapitálu podniku v ČR.",
+                    "Vrátí se v plné výši zaměstnanci jako nezdanitelná přímá finanční kompenzace od podniku."
+                ],
+                "spravnaIndex": 1,
+                "vysvetleni": "Částka nad limit (např. 20,50 Kč) se započítá do hrubé mzdy zaměstnance a podléhá záloze na daň z příjmů a odvodům ZP a SP za zaměstnance i zaměstnavatele.",
+                "citace": "Hodnota stravenky nad limit – započítá se do HM zaměstnance. z 20,50 Kč se odvádí záloha na daň z příjmu, ZP a SP, placené zaměstnancem a zaměstnavatelem."
+            },
+            {
+                "kategorie": "Stravenky - Částečná úhrada zaměstnancem",
+                "otazka": "Jak se účtuje stravenka v ceně 150 Kč, pokud zaměstnavatel hradí limit 129,50 Kč a zbytek 20,50 Kč hradí zaměstnanec ze mzdy?",
+                "moznosti": [
+                    "Příspěvek zaměstnavatele: 518 / 213 (129,50 Kč), pohledávka: 311 / 213 (20,50 Kč), srážka z čisté mzdy: 335 / 331.",
+                    "Příspěvek zaměstnavatele: 527 / 221 (129,50 Kč), pohledávka: 335 / 221 (20,50 Kč), srážka z čisté mzdy: 211 / 335.",
+                    "Příspěvek zaměstnavatele: 501 / 213 (129,50 Kč), pohledávka: 379 / 213 (20,50 Kč), srážka z čisté mzdy: 331 / 379.",
+                    "Příspěvek zaměstnavatele: 527 / 213 (129,50 Kč), pohledávka: 335 / 213 (20,50 Kč), srážka z čisté mzdy: 331 / 335."
+                ],
+                "spravnaIndex": 3,
+                "vysvetleni": "Příspěvek zaměstnavatele 129,50 Kč: 527 / 213. Pohledávka za zaměstnancem 20,50 Kč: 335 / 213. Úhrada srážkou z čisté mzdy: 331 / 335.",
+                "citace": "Zaměstnavatel hradí část ceny stravenky: Příspěvek zaměstnavatele … 129,50 Kč (527 / 213), Pohledávka za zaměstnanci … 20,50 Kč (335 / 213), Zaměstnanec hradí stravenku ze své čisté mzdy (331 / 335)."
+            },
+            {
+                "kategorie": "Stravenkový paušál - Definice a účtování",
+                "otazka": "Co je to stravenkový paušál a jakými účetními zápisy se zachycuje jeho předpis a výplata zaměstnanci?",
+                "moznosti": [
+                    "Je to peněžitý příspěvek na stravování; předpis u zaměstnavatele: 527 / 331 a výplata z BÚ: 331 / 221.",
+                    "Je to nákup tištěných papírových cenin podniku; předpis: 213 / 321 a výplata v hotovosti: 321 / 211.",
+                    "Je to nepeněžní věcný dar; předpis u zaměstnavatele: 543 / 331 a výplata v ceninách: 331 / 213 v ceně.",
+                    "Je to záloha na služební cesty; předpis u zaměstnavatele: 335 / 221 a výplata z BÚ: 512 / 335 v Kč."
+                ],
+                "spravnaIndex": 0,
+                "vysvetleni": "Stravenkový paušál je peněžitý příspěvek na stravování. U zaměstnavatele je daňovým nákladem (527 / 331) a výplata se provádí z BÚ (331 / 221).",
+                "citace": "Stravenkový paušál: Peněžitý příspěvek na stravování, nahrazuje stravenky. U zaměstnavatele – daňově účinný náklad (527 / 331), Výplata paušálu (331 / 221)."
+            },
+            {
+                "kategorie": "Bezhotovostní styk - Běžné operace",
+                "otazka": "Které základní provozní operace se provádějí v rámci bezhotovostního platebního styku z běžného účtu (221)?",
+                "moznosti": [
+                    "Výhradně drobné nákupy kancelářských sponek a benzínu v hotovosti do částky 500 Kč za nákup.",
+                    "Výhradně přeceňování valutových pokladen ke dni účetní uzávěrky k 31. prosinci daného roku.",
+                    "Platby faktur dodavatelům, výplata mezd, odvod ZP/SP, platby daní a příjmy od odběratelů v Kč.",
+                    "Výhradně fyzická inventarizace bankovek a mincí v trezoru za účasti inventarizační komise."
+                ],
+                "spravnaIndex": 2,
+                "vysvetleni": "Z BÚ se hradí dodavatelské faktury, mzdy, ZP a SP, daně, splátky úvěrů a přijímají se platby od odběratelů za zboží a služby.",
+                "citace": "Bezhotovostní platební styk: Platba faktur dodavatelům, Výplata mezd, Platba ZP a SP, Platba daní, Příjem plateb od odběratelů..."
+            },
+            {
+                "kategorie": "Bezhotovostní styk - Úroky a doklady",
+                "otazka": "Jak se v účetnictví rozlišují přijaté a placené úroky z bankovního účtu a co je podkladem pro účtování?",
+                "moznosti": [
+                    "Přijaté úroky jsou provozní výnos (602); placené jsou provozní náklad (501); podkladem je PPD.",
+                    "Přijaté úroky jsou finanční výnos (662); placené jsou finanční náklad (562); podkladem je VBÚ.",
+                    "Přijaté úroky jsou mimorozpočtové (379); placené jsou daňový odpočet (343); podkladem je VPD.",
+                    "Přijaté úroky jsou kapitálový vklad (411); placené jsou ztráta (429); podkladem je výčetka."
+                ],
+                "spravnaIndex": 1,
+                "vysvetleni": "Přijaté úroky od banky představují finanční výnos (662), placené úroky z úvěrů finanční náklad (562). Podkladem je výpis z běžného účtu (VBÚ).",
+                "citace": "Úroky přijaté – odměna od banky (finanční výnos); Úroky placené – z bankovních úvěrů (finanční náklad). Podklad pro účtování – výpis z BÚ, VÚÚ."
+            },
+            {
+                "kategorie": "Bankovní účty - Druhy účtů",
+                "otazka": "Která z následujících skupin správně uvádí druhy bankovních účtů vedených v rámci syntetického účtu 221?",
+                "moznosti": [
+                    "Běžné účty, kontokorentní účty, devizové účty a termínované vklady (s výpovědní lhůtou <= 1 rok).",
+                    "Valutové pokladny, pokladní knihy, ceninové sklady a sběrné obálky pro poštovní známky v ČR.",
+                    "Akciové účty, dluhopisové fondy, rezervní kapitálové fondy a vkladové účty společníků v s.r.o.",
+                    "Dohadné účty aktivní, dohadné účty pasivní, časové účty nákladů a výnosové přechodné účty."
+                ],
+                "spravnaIndex": 0,
+                "vysvetleni": "Mezi bankovní účty (221) patří běžné účty, kontokorentní účty, devizové účty a termínované vklady s výpovědní lhůtou do 1 roku.",
+                "citace": "Druhy bankovních účtů (221): Běžné účty, Kontokorentní účty, Devizové účty, Termínované vklady – výpovědní lhůta <= 1 rok."
+            },
+            {
+                "kategorie": "Bankovní účty - Kontokorent a devizový účet",
+                "otazka": "Jaká je hlavním specifická vlastnost kontokorentního účtu a k čemu slouží devizový účet podniku?",
+                "moznosti": [
+                    "Kontokorentní účet je výhradně v cizí měně; devizový účet umožňuje záporný zůstatek na účtu podniku.",
+                    "Kontokorentní účet slouží pouze pro ceniny; devizový účet slouží výhradně pro výplatu mezd v podniku.",
+                    "Kontokorentní účet nelze přečerpat; devizový účet automaticky ruší povinnost platit DPH ze služeb.",
+                    "Kontokorentní účet může mít záporný zůstatek; devizový účet vede peněžní prostředky v cizí měně."
+                ],
+                "spravnaIndex": 3,
+                "vysvetleni": "Kontokorentní účet umožňuje čerpat do mínusu (kontokorentní úvěr). Devizový účet drží peněžní prostředky v cizích měnách, čímž odpadá nutnost jejich nákupu.",
+                "citace": "Kontokorentní účty – mohou mít záporný zůstatek (kontokorentní úvěr). Devizové účty – peníze v cizích měnách, odpadá nutnost nákupu cizí měny."
+            },
+            {
+                "kategorie": "Bankovní účty - Termínované vklady",
+                "otazka": "Jaká je maximální výpovědní lhůta u termínovaných vkladů na účtu 221 a jak se účty analyticky členění?",
+                "moznosti": [
+                    "Výpovědní lhůta je nejvýše 5 let a analytické členění se provádí výhradně podle jmen předsedů boardu.",
+                    "Výpovědní lhůta je <= 1 rok a bankovní účty mohou být vedeny analyticky např. podle jednotlivých bank.",
+                    "Výpovědní lhůta je neomezená a analytická evidence se vede výhradně podle jednotlivých dlužníků.",
+                    "Výpovědní lhůta je přesně 10 let a analytické členění je přísně zakázáno vyhláškou pro účetnictví."
+                ],
+                "spravnaIndex": 1,
+                "vysvetleni": "Termínované vklady spadající na účet 221 mají výpovědní lhůtu kratší nebo rovnou 1 roku. Bankovní účty se analyticky členění např. dle bank.",
+                "citace": "Termínované vklady – výpovědní lhůta <= 1 rok. Mohou být vedeny i analyticky (např. podle bank)."
+            },
+            {
+                "kategorie": "Platební karty - Charakteristika",
+                "otazka": "Jak je v účetnictví nahlíženo na platební kartu z hlediska majetkové klasifikace a k čemu slouží?",
+                "moznosti": [
+                    "Je považována za ceninu podle účtu 213, protože má svou vlastní nominální jmenovitou hodnotu podniku.",
+                    "Je považována za dlouhodobý nehmotný majetek na účtu 014 s povinností ročních odpisů z ceny majetku.",
+                    "Slouží k bezhotovostním úhradám a není ceninou, protože sama o sobě nemá žádnou nominální hodnotu.",
+                    "Je považována za samostatný cenný papír účtovaný v účtové skupině 25 – Krátkodobý finanční majetek."
+                ],
+                "spravnaIndex": 2,
+                "vysvetleni": "Platební karta slouží k bezhotovostním úhradám. Není ceninou, protože sama o sobě nemá žádnou jmenovitou hodnotu.",
+                "citace": "Účtování platební karty: K bezhotovostním úhradám (není to cenina – nemá hodnotu)."
+            },
+            {
+                "kategorie": "Platební karty - Přijaté platby od zákazníků",
+                "otazka": "Na který účet se zaúčtuje tržba za prodej zboží při platbě zákazníka kartou před obdržením výpisu z BÚ?",
+                "moznosti": [
+                    "Na rozvahový účet 315 – Ostatní pohledávky účetním zápisem 315 / 604, 343 na základě VÚD.",
+                    "Na majetkový ceninový účet 213 – Ceniny účetním zápisem 213 / 604 na základě pokladního dokladu.",
+                    "Na nákladový účet 568 – Ostatní finanční náklady účetním zápisem 568 / 604 na základě výpisu.",
+                    "Na závazkový účet 325 – Ostatní závazky účetním zápisem 325 / 604 na základě faktury doručené."
+                ],
+                "spravnaIndex": 0,
+                "vysvetleni": "Tržba při platbě kartou zakládá pohledávku vůči zpracovateli plateb/bance na účtu 315 – Ostatní pohledávky (315 / 604, 343).",
+                "citace": "Přijaté platby od zákazníků: Tržby z prodeje … pohledávka … 315 – ostatní pohledávky (VÚD - tržba, platba kartou 315 / 604, 343)."
+            },
+            {
+                "kategorie": "Platební karty - Úhrada na BÚ a poplatek",
+                "otazka": "Jak se podle výpisu z BÚ (VBÚ) zaúčtuje připsání úhrady od zákazníků za platby kartou a bankovní poplatek?",
+                "moznosti": [
+                    "Úhrada tržby na BÚ: 315 / 221 a bankovní poplatek z platby kartou: 221 / 568 podle výpisu z účtu.",
+                    "Úhrada tržby na BÚ: 211 / 315 a bankovní poplatek z platby kartou: 518 / 211 podle výpisu z účtu.",
+                    "Úhrada tržby na BÚ: 221 / 315 a bankovní poplatek z platby kartou: 568 / 221 podle výpisu z účtu.",
+                    "Úhrada tržby na BÚ: 221 / 604 a bankovní poplatek z platby kartou: 548 / 221 podle výpisu z účtu."
+                ],
+                "spravnaIndex": 2,
+                "vysvetleni": "Připsání peněz na BÚ zlikviduje pohledávku (221 / 315). Stržený bankovní poplatek za zpracování kartou se účtuje do finančních nákladů (568 / 221).",
+                "citace": "Úhrada pohledávky, poplatek za platbu kartou … podle VBÚ: VBÚ – úhrada zboží (221 / 315); VBÚ – poplatek bance (568 / 221)."
+            },
+            {
+                "kategorie": "Platební karty - Nákup firemní kartou (Varianta A)",
+                "otazka": "Jak se účtuje nákup PHM firemní kartou (paragon) a úbytek peněz na BÚ při použití účtu 325?",
+                "moznosti": [
+                    "Nákup na paragon: 501, 343 / 221 na VÚD a úbytek peněz z BÚ: 325 / 501 na VBÚ.",
+                    "Nákup na paragon: 501, 343 / 335 na VÚD a úbytek peněz z BÚ: 335 / 221 na VBÚ.",
+                    "Nákup na paragon: 325 / 501, 343 na VÚD a úbytek peněz z BÚ: 221 / 325 na VBÚ.",
+                    "Nákup na paragon: 501, 343 / 325 na VÚD a úbytek peněz z BÚ: 325 / 221 na VBÚ."
+                ],
+                "spravnaIndex": 3,
+                "vysvetleni": "Platba kartou na základě paragonu vytvoří závazek vůči bance: 501, 343 / 325. Stržení peněz z bankovního účtu závazek uhradí: 325 / 221.",
+                "citace": "Placení firemní kartou prodávajícímu: Placení kartou … závazek vůči bance (paragon 501, 343 / 325); Úbytek peněz z bankovního účtu … úhrada závazku (VBÚ 325 / 221)."
+            },
+            {
+                "kategorie": "Platební karty - Nákup firemní kartou (Varianta B)",
+                "otazka": "Jak se účtuje stržení platby z BÚ (VBÚ) a následné předložení paragonu za PHM při použití účtu 335?",
+                "moznosti": [
+                    "Úbytek na BÚ: 325 / 221 (závazek) a předložení paragonu: 501, 343 / 325 (vyúčtování nového závazku).",
+                    "Úbytek na BÚ: 501, 343 / 221 (přímý náklad) a předložení paragonu: 335 / 501 (nová pohledávka).",
+                    "Úbytek na BÚ: 335 / 221 (pohledávka) a předložení paragonu: 501, 343 / 335 (úhrada pohledávky).",
+                    "Úbytek na BÚ: 221 / 335 (příjem peněz) a předložení paragonu: 335 / 501, 343 (vydání cenin)."
+                ],
+                "spravnaIndex": 2,
+                "vysvetleni": "Úbytek peněz z BÚ zakládá dočasnou pohledávku za držitelem karty (335 / 221). Doložení paragonu náklad vyúčtuje a pohledávku zruší (501, 343 / 335).",
+                "citace": "Placení firemní kartou: Úbytek peněz z bankovního účtu … pohledávka vůči zaměstnanci (VBÚ 335 / 221); Placení kartou … úhrada pohledávky (paragon 501, 343 / 335)."
+            },
+            {
+                "kategorie": "Valutová pokladna - Definice a měny",
+                "otazka": "Co jsou to valuty, v jakých měnových jednotkách se vede valutová pokladna a jak se analyticky sleduje?",
+                "moznosti": [
+                    "Valuty jsou tištěné poštovní známky; pokladna se vede výhradně v českých korunách bez AU podniku.",
+                    "Valuty jsou bezhotovostní převody na BÚ; pokladna se vede na účtu 221 bez rozlišení cizích měn v ČR.",
+                    "Valuty jsou termínované vklady u bank s povinnou výpovědní lhůtou delší než 5 let v české měně.",
+                    "Valuty jsou peněžní prostředky v cizí měně; pokladna se vede v Kč i cizí měně na vlastním AU."
+                ],
+                "spravnaIndex": 3,
+                "vysvetleni": "Valuty jsou peněžní prostředky v cizí měně (USD, EUR, GBP...). Valutová pokladna se vede souběžně v CZK i cizí měně a má samostatný analytický účet (např. 211.2).",
+                "citace": "Valutová pokladna: Valuty … peněžní prostředky v cizí měně ($, Eura …). Vedena v české i cizí měně. Má vlastní analytický účet."
+            },
+            {
+                "kategorie": "Valutová pokladna - Uzávěrkový přepočet",
+                "otazka": "Podle jakého kurzu se přeceňuje valutová pokladna ke dni účetní závěrky (31. 12.) a jaké účty ovlivňuje?",
+                "moznosti": [
+                    "Podle kurzu komerční banky v den sestavení výkazu; vzniklé rozdíly ovlivňují provozní účty 518 a 602.",
+                    "Podle kurzu ČNB k 31. 12.; vzniká kurzová ztráta na účtu 563 nebo kurzový zisk na rozvahovém 663.",
+                    "Podle průměrného ročního kurzu ECB; vzniklé rozdíly se účtují na přechodný rozvahový účet 261.",
+                    "Podle pevného kurzu stanoveného vnitřní směrnicí; vzniklé rozdíly vůbec neovlivňují hospodaření."
+                ],
+                "spravnaIndex": 1,
+                "vysvetleni": "K 31. 12. se valutová pokladna přepočítává kurzem ČNB platným k tomuto dni. Rozdíly tvoří kurzovou ztrátu (563) nebo kurzový zisk (663).",
+                "citace": "Přepočet valutové pokladny ke dni účetní závěrky: Podle kurzu ČNB k 31. 12. Kurzové rozdíly ovlivňují HV: 563 – kurzové ztráty, 663 – kurzové zisky."
+            },
+            {
+                "kategorie": "Valutová pokladna - Příklad přecenění",
+                "otazka": "Účetní stav pokladny činí 10 000 Kč. Přepočet 500 USD x kurz ČNB 21 Kč/USD činí 10 500 Kč. Jak se zaúčtuje rozdíl?",
+                "moznosti": [
+                    "Zaúčtuje se kurzová ztráta ve výši 500 Kč účetním zápisem 563 / 211.2 v podniku.",
+                    "Zaúčtuje se provozní přebytek ve výši 500 Kč účetním zápisem 211.2 / 668 v podniku.",
+                    "Zaúčtuje se kurzový zisk ve výši 500 Kč účetním zápisem 211.2 / 663 v podniku.",
+                    "Zaúčtuje se převod na peníze na cestě ve výši 500 Kč účetním zápisem 261 / 211.2."
+                ],
+                "spravnaIndex": 2,
+                "vysvetleni": "Stav po přepočtu (10 500 Kč) je vyšší než účetní stav (10 000 Kč). Vzniká kurzový zisk 500 Kč účtovaný na 211.2 / 663.",
+                "citace": "Příklad: Zůstatek valutové pokladny podle účetnictví … 10 000,- Kč; Zůstatek po přepočtu … 500 $ * 21,- Kč / $ = 10 500,- Kč -> kurzový zisk (211.2 / 663)."
+            },
+            {
+                "kategorie": "Valutová pokladna - Nákup valut od banky",
+                "otazka": "Které dva různé kurzy se používají při účtování nákupu cizí měny od banky do valutové pokladny podniku?",
+                "moznosti": [
+                    "Pro příjem do pokladny se použije kurz ČNB a pro zaplacení bance se použije kurz banky.",
+                    "Pro příjem do pokladny i pro zaplacení bance se používá průměrný měsíční kurz ČNB.",
+                    "Pro příjem do pokladny se použije kurz banky a pro zaplacení bance se použije celní kurz.",
+                    "Pro příjem do pokladny se použije kurz komerční banky a pro úhradu z BÚ kurz banky ECB."
+                ],
+                "spravnaIndex": 0,
+                "vysvetleni": "Valuty do pokladny se ocení kurzem ČNB v den nákupu (PPD 211.2 / 261). Úbytek z bankovního účtu je dle kurzu komerční banky (VBÚ 261 / 221). Rozdíl tvoří kurzový zisk/ztrátu na 261.",
+                "citace": "Nákup valut do pokladny od banky: Přepočítány na českou měnu podle kurzu v den nákupu. Příjem valut do pokladny … kurz ČNB, Zaplacení valut bance … kurz banky -> kurzový rozdíl."
+            },
+            {
+                "kategorie": "Valutová pokladna - Nákup valut (ztráta)",
+                "otazka": "Nakoupeno 1000 GBP. VBÚ za kurz banky 28,9 Kč/GBP (28 900 Kč, 261/221). PPD za kurz ČNB 27,9 Kč/GBP (27 900 Kč, 211.2/261). Jak se zaúčtuje rozdíl?",
+                "moznosti": [
+                    "Zaúčtuje se kurzový zisk v částce 1 000 Kč účetním zápisem 261 / 663 na VÚD.",
+                    "Zaúčtuje se bankovní poplatek v částce 1 000 Kč účetním zápisem 568 / 221 na VBÚ.",
+                    "Zaúčtuje se manko v pokladně v částce 1 000 Kč účetním zápisem 569 / 211.2 na VÚD.",
+                    "Zaúčtuje se kurzová ztráta v částce 1 000 Kč účetním zápisem 563 / 261 na VÚD."
+                ],
+                "spravnaIndex": 3,
+                "vysvetleni": "Bance bylo zaplaceno 28 900 Kč (MD 261), ale do pokladny včleněno jen 27 900 Kč (D 261). Na účtu 261 zůstává debetní zůstatek 1 000 Kč, což je kurzová ztráta (563 / 261).",
+                "citace": "Příklad účtování: VBÚ – nákup 1000 GBP (28 900,- 261 / 221); PPD – převod do pokladny kurz ČNB (27 900,- 211.2 / 261); VÚD – kurzový rozdíl (1 000,- 563 / 261)."
+            },
+            {
+                "kategorie": "Valutová pokladna - Nákup valut (zisk)",
+                "otazka": "Nakoupeno 1000 GBP. VBÚ za kurz banky 27,9 Kč/GBP (27 900 Kč, 261/221). PPD za kurz ČNB 28,9 Kč/GBP (28 900 Kč, 211.2/261). Jak se zaúčtuje rozdíl?",
+                "moznosti": [
+                    "Zaúčtuje se kurzová ztráta v částce 1 000 Kč účetním zápisem 563 / 211.2 na VÚD.",
+                    "Zaúčtuje se provozní přebytek v částce 1 000 Kč účetním zápisem 211.2 / 668 na PPD.",
+                    "Zaúčtuje se kurzový zisk v částce 1 000 Kč účetním zápisem 261 / 663 na VÚD.",
+                    "Zaúčtuje se úrok z převodu v částce 1 000 Kč účetním zápisem 221 / 662 na VBÚ."
+                ],
+                "spravnaIndex": 2,
+                "vysvetleni": "Bance bylo zaplaceno 27 900 Kč (MD 261), ale do pokladny zapsáno 28 900 Kč (D 261). Na účtu 261 vzniká kreditní zůstatek 1 000 Kč, což je kurzový zisk (261 / 663).",
+                "citace": "VBÚ – nákup 1000 GBP (27 900,- 261 / 221); PPD – převod do pokladny kurz ČNB (28 900,- 211.2 / 261); VÚD – kurzový rozdíl (1 000,- 261 / 663)."
+            },
+            {
+                "kategorie": "Služební cesty - Kurz zálohy a vyúčtování",
+                "otazka": "Který kurz cizí měny se používá pro přepočet při výplatě zálohy, vyúčtování a vyrovnání zahraniční služební cesty?",
+                "moznosti": [
+                    "Pro každý účetní krok se musí použít aktuální kurz ČNB vyhlašovaný v den daného účetního případu.",
+                    "Použije se kurz ČNB platný v den výplaty zálohy, a to jednotně pro všechny související kroky.",
+                    "Použije se kurz komerční banky v den vrácení přeplatku či doplatku do valutové pokladny podniku.",
+                    "Použije se pevný celoroční kurz stanovený ministerstvem financí pro zahraniční pracovní cesty."
+                ],
+                "spravnaIndex": 1,
+                "vysvetleni": "Kurz platný v den výplaty zálohy se použije pro všechny navazující účetní případy služební cesty (záloha, vyúčtování, doplatek či přeplatek).",
+                "citace": "Výplata valut na služební cesty do zahraničí: Kurz pro přepočet cizí měny na Kč, platný v den výplaty zálohy. Pro všechny účetní případy (záloha, vyúčtování, doplatek nebo přeplatek)."
+            },
+            {
+                "kategorie": "Služební cesty - Účtování vyúčtování",
+                "otazka": "Vydáno 500 GBP (kurz 28,5 Kč = 14 250 Kč, VPD 335/211.2). Vyúčtováno 470 GBP (13 395 Kč). Přebytek 30 GBP (855 Kč) vrácen. Jak se účtuje vyúčtování a vrácení?",
+                "moznosti": [
+                    "Vyúčtování: 512 / 335 (13 395 Kč) a vrácení přeplatku do pokladny: 211.2 / 335 (855 Kč).",
+                    "Vyúčtování: 518 / 335 (13 395 Kč) a vrácení přeplatku do pokladny: 221 / 335 (855 Kč).",
+                    "Vyúčtování: 335 / 512 (13 395 Kč) a vrácení přeplatku do pokladny: 335 / 211.2 (855 Kč).",
+                    "Vyúčtování: 563 / 335 (13 395 Kč) a vrácení přeplatku do pokladny: 663 / 335 (855 Kč)."
+                ],
+                "spravnaIndex": 0,
+                "vysvetleni": "Vyúčtování cestovného: VÚD 512 / 335 (13 395 Kč). Vrácení nevydaných valut do valutové pokladny: PPD 211.2 / 335 (855 Kč).",
+                "citace": "VPD – vydáno 500 GBP (14 250,- 335 / 211.2); VÚD – vyúčtování služební cesty 470 GBP (13 395,- 512 / 335); PPD – rozdíl vrácen do pokladny (855,- 211.2 / 335)."
+            },
+            {
+                "kategorie": "Zahraniční faktury - Vznik kurzových rozdílů",
+                "otazka": "Proč vzniká kurzový rozdíl (zisk či ztráta) při účtování a následné úhradě přijaté zahraniční faktury?",
+                "moznosti": [
+                    "Protože zahraniční faktury podléhají povinnému clu, které se dodatečně připočítává k ceně.",
+                    "Protože se z každé zahraniční platby musí odvádět srážková daň z příjmů finančnímu úřadu.",
+                    "Protože banka účtuje sankční poplatky za převod měny mezi různými státy Evropské unie.",
+                    "Protože se liší kurz ČNB v den vzniku faktury od kurzu použitého při platbě faktury."
+                ],
+                "spravnaIndex": 3,
+                "vysvetleni": "Faktura se přepočítá kurzem ČNB v den vzniku účetního případu. Úhrada se zaúčtuje v den platby aktuálním kurzem. Rozdíl kurzů tvoří kurzovou ztrátu (563) nebo zisk (663).",
+                "citace": "Kurzové rozdíly při úhradách zahraničních faktur: Fakturovaná částka přepočtena na Kč podle aktuálního kurzu ČNB v den vzniku a v den platby -> vznik kurzové ztráty (563), zisku (663)."
+            },
+            {
+                "kategorie": "Zahraniční faktury - DPH z EU",
+                "otazka": "Jakými účetními zápisy se účtuje povinnost přiznat DPH (dodanění) a nárok na odpočet DPH u faktury z EU?",
+                "moznosti": [
+                    "Dodanění se účtuje zápisem 343 / 349 a nárok na odpočet DPH zápisem 349 / 343.",
+                    "Dodanění se účtuje zápisem 349 / 343 a nárok na odpočet DPH zápisem 343 / 349.",
+                    "Dodanění se účtuje zápisem 548 / 343 a nárok na odpočet DPH zápisem 343 / 648.",
+                    "Dodanění se účtuje zápisem 321 / 343 a nárok na odpočet DPH zápisem 343 / 321."
+                ],
+                "spravnaIndex": 1,
+                "vysvetleni": "U nákupu z EU provádí plátce DPH samovyměření: dodanění (přiznání daně) 349 / 343 a současně nárok na odpočet DPH 343 / 349.",
+                "citace": "Příklad: FAP z EU – dodanění (349 / 343); FAP – nárok na odpočet (343 / 349)."
+            },
+            {
+                "kategorie": "Zahraniční faktury - Kurzová ztráta",
+                "otazka": "FAP z EU: 1 000 USD, kurz 21 Kč/USD (21 000 Kč, 111/321). VBÚ úhrada při kurzu 22 Kč/USD (22 000 Kč, 321/221). Jak se zaúčtuje vzniklý kurzový rozdíl?",
+                "moznosti": [
+                    "Zaúčtuje se kurzová ztráta v částce 1 000 Kč účetním zápisem 563 / 321 na základě VÚD.",
+                    "Zaúčtuje se kurzový zisk v částce 1 000 Kč účetním zápisem 321 / 663 na základě VÚD.",
+                    "Zaúčtuje se provozní náklad v částce 1 000 Kč účetním zápisem 548 / 321 na základě VÚD.",
+                    "Zaúčtuje se sleva z ceny v částce 1 000 Kč účetním zápisem 321 / 111 na základě VÚD."
+                ],
+                "spravnaIndex": 0,
+                "vysvetleni": "Podnik musel na úhradu dlužení 21 000 Kč vynaložit 22 000 Kč. Vznikla kurzová ztráta 1 000 Kč účtovaná na 563 / 321.",
+                "citace": "FAP – 1 000 $, kurz 21,- Kč / $ (21 000,- 111 / 321); VBÚ – úhrada kurz 22,- Kč / $ (22 000,- 321 / 221); VÚD – kurzový rozdíl (1 000,- 563 / 321)."
+            },
+            {
+                "kategorie": "Zahraniční faktury - Kurzový zisk",
+                "otazka": "FAP z EU: 1 000 USD, kurz 22 Kč/USD (22 000 Kč, 111/321). VBÚ úhrada při kurzu 21 Kč/USD (21 000 Kč, 321/221). Jak se zaúčtuje vzniklý kurzový rozdíl?",
+                "moznosti": [
+                    "Zaúčtuje se kurzová ztráta v částce 1 000 Kč účetním zápisem 563 / 321 na základě VÚD.",
+                    "Zaúčtuje se mimorozpočtový výnos v částce 1 000 Kč účetním zápisem 321 / 648 na VÚD.",
+                    "Zaúčtuje se kurzový zisk v částce 1 000 Kč účetním zápisem 321 / 663 na základě VÚD.",
+                    "Zaúčtuje se snížení DPH v částce 1 000 Kč účetním zápisem 343 / 321 na základě VÚD."
+                ],
+                "spravnaIndex": 2,
+                "vysvetleni": "Závazek byl v účetnictví 22 000 Kč, ale na úhradu stačilo 21 000 Kč. Vzniká kurzový zisk 1 000 Kč účtovaný na 321 / 663.",
+                "citace": "FAP – 1 000 $, kurz 22,- Kč / $ (22 000,- 111 / 321); VBÚ – úhrada kurz 21,- Kč / $ (21 000,- 321 / 221); VÚD – kurzový rozdíl (1 000,- 321 / 663)."
+            }
+        ];
+
+        // State Variables
+        let userAnswers = new Array(questions.length).fill(null); // stores selected option index (0..3)
+        let activeIndex = 0;
+        let isErrorFilterActive = false;
+        let errorIndices = [];
+        let isSoundMuted = false;
+
+        // Web Audio API Synthesizer
+        let audioCtx = null;
+        function getAudioContext() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            return audioCtx;
+        }
+
+        function playSound(type) {
+            if (isSoundMuted) return;
+            try {
+                const ctx = getAudioContext();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+
+                const now = ctx.currentTime;
+
+                if (type === 'click') {
+                    osc.frequency.setValueAtTime(400, now);
+                    gain.gain.setValueAtTime(0.05, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+                    osc.start(now);
+                    osc.stop(now + 0.05);
+                } else if (type === 'correct') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(523.25, now); // C5
+                    osc.frequency.setValueAtTime(659.25, now + 0.08); // E5
+                    gain.gain.setValueAtTime(0.1, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+                    osc.start(now);
+                    osc.stop(now + 0.25);
+                } else if (type === 'wrong') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(220, now); // A3
+                    osc.frequency.setValueAtTime(174.61, now + 0.1); // F3
+                    gain.gain.setValueAtTime(0.12, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+                    osc.start(now);
+                    osc.stop(now + 0.3);
+                } else if (type === 'toggle') {
+                    osc.frequency.setValueAtTime(600, now);
+                    gain.gain.setValueAtTime(0.05, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+                    osc.start(now);
+                    osc.stop(now + 0.08);
+                }
+            } catch(e) {
+                console.log("Audio not supported or blocked");
+            }
+        }
+
+        function toggleSound() {
+            isSoundMuted = !isSoundMuted;
+            document.getElementById('soundIcon').innerText = isSoundMuted ? '🔇' : '🔊';
+            playSound('toggle');
+        }
+
+        // INIT APP
+        window.onload = function() {
+            renderMapGrid();
+            renderQuestion();
+            updateStats();
+            setupKeyboardNav();
+        };
+
+        // RENDER QUESTION MAP (40 SQUARE BUTTONS)
+        function renderMapGrid() {
+            const grid = document.getElementById('questionMapGrid');
+            grid.innerHTML = '';
+
+            const itemsToDisplay = isErrorFilterActive ? errorIndices : Array.from({length: questions.length}, (_, i) => i);
+
+            if (itemsToDisplay.length === 0 && isErrorFilterActive) {
+                grid.innerHTML = `<div class="col-span-full text-center text-xs text-slate-400 py-2">Žádné chyby! 🎉</div>`;
+                return;
+            }
+
+            itemsToDisplay.forEach((qIndex) => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                const isCurrent = qIndex === activeIndex;
+                const ans = userAnswers[qIndex];
+                const q = questions[qIndex];
+
+                let bgClass = 'bg-slate-700/80 text-slate-300 hover:bg-slate-600';
+                if (ans !== null) {
+                    if (ans === q.spravnaIndex) {
+                        bgClass = 'bg-emerald-600 text-white hover:bg-emerald-500';
+                    } else {
+                        bgClass = 'bg-rose-600 text-white hover:bg-rose-500';
+                    }
+                }
+
+                let borderClass = 'border border-slate-600/50';
+                if (isCurrent) {
+                    borderClass = 'ring-2 ring-brand-400 ring-offset-2 ring-offset-slate-900 font-extrabold border-brand-400';
+                }
+
+                btn.className = `w-full aspect-square rounded-lg text-xs font-bold transition flex items-center justify-center ${bgClass} ${borderClass}`;
+                btn.innerText = qIndex + 1;
+                btn.onclick = () => {
+                    playSound('click');
+                    activeIndex = qIndex;
+                    renderQuestion();
+                    renderMapGrid();
+                };
+
+                grid.appendChild(btn);
+            });
+        }
+
+        // RENDER ACTIVE QUESTION
+        function renderQuestion() {
+            const q = questions[activeIndex];
+            const currentAnswer = userAnswers[activeIndex];
+
+            document.getElementById('currentQIndexNumber').innerText = activeIndex + 1;
+            document.getElementById('questionCategory').innerText = q.kategorie;
+            document.getElementById('questionText').innerText = q.otazka;
+
+            const container = document.getElementById('optionsContainer');
+            container.innerHTML = '';
+
+            const labels = ['A', 'B', 'C', 'D'];
+
+            q.moznosti.forEach((optionText, optIndex) => {
+                const optBtn = document.createElement('button');
+                optBtn.type = 'button';
+
+                let baseStyles = "w-full text-left p-4 rounded-xl border transition-all duration-200 flex items-start space-x-3 text-sm font-medium relative ";
+                
+                if (currentAnswer === null) {
+                    // Not answered yet
+                    baseStyles += "bg-slate-700/50 hover:bg-slate-700 border-slate-600/80 hover:border-brand-500 text-slate-200 shadow-sm";
+                } else {
+                    // Already answered
+                    if (optIndex === q.spravnaIndex) {
+                        // Correct Option
+                        baseStyles += "bg-emerald-950/80 border-emerald-500 text-emerald-100 ring-1 ring-emerald-500";
+                    } else if (optIndex === currentAnswer) {
+                        // Wrong Option Chosen
+                        baseStyles += "bg-rose-950/80 border-rose-500 text-rose-100 ring-1 ring-rose-500";
+                    } else {
+                        // Other unselected options
+                        baseStyles += "bg-slate-800/40 border-slate-700/60 text-slate-400 opacity-60";
+                    }
+                }
+
+                optBtn.className = baseStyles;
+
+                let iconIndicator = '';
+                if (currentAnswer !== null) {
+                    if (optIndex === q.spravnaIndex) {
+                        iconIndicator = `<span class="ml-auto text-emerald-400 font-bold text-base">✓</span>`;
+                    } else if (optIndex === currentAnswer) {
+                        iconIndicator = `<span class="ml-auto text-rose-400 font-bold text-base">✗</span>`;
+                    }
+                }
+
+                optBtn.innerHTML = `
+                    <span class="inline-flex items-center justify-center w-6 h-6 rounded-md bg-slate-800 text-slate-300 font-mono text-xs font-bold border border-slate-600 flex-shrink-0 mt-0.5">
+                        ${labels[optIndex]}
+                    </span>
+                    <span class="flex-grow pr-2 leading-relaxed">${optionText}</span>
+                    ${iconIndicator}
+                `;
+
+                optBtn.onclick = () => {
+                    if (currentAnswer === null) {
+                        selectOption(optIndex);
+                    }
+                };
+
+                container.appendChild(optBtn);
+            });
+
+            // Explanation box handling
+            const expBox = document.getElementById('explanationBox');
+            if (currentAnswer !== null) {
+                expBox.classList.remove('hidden');
+                document.getElementById('explanationText').innerText = q.vysvetleni;
+                document.getElementById('citationText').innerText = `"${q.citace}"`;
+            } else {
+                expBox.classList.add('hidden');
+            }
+
+            // Navigation buttons enable/disable
+            document.getElementById('prevBtn').disabled = activeIndex === 0;
+            
+            const nextBtn = document.getElementById('nextBtn');
+            if (activeIndex === questions.length - 1) {
+                nextBtn.innerHTML = `<span>Protokol</span> <span>🖨️</span>`;
+            } else {
+                nextBtn.innerHTML = `<span>Další</span> <span>→</span>`;
+            }
+
+            renderMapGrid();
+        }
+
+        // OPTION SELECTION LOGIC
+        function selectOption(optIndex) {
+            userAnswers[activeIndex] = optIndex;
+            const q = questions[activeIndex];
+
+            if (optIndex === q.spravnaIndex) {
+                playSound('correct');
+            } else {
+                playSound('wrong');
+            }
+
+            updateStats();
+            renderQuestion();
+        }
+
+        // STATS & OA GRADING CALCULATION
+        function updateStats() {
+            let correctCount = 0;
+            let wrongCount = 0;
+            let answeredCount = 0;
+            errorIndices = [];
+
+            userAnswers.forEach((ans, i) => {
+                if (ans !== null) {
+                    answeredCount++;
+                    if (ans === questions[i].spravnaIndex) {
+                        correctCount++;
+                    } else {
+                        wrongCount++;
+                        errorIndices.push(i);
+                    }
+                }
+            });
+
+            document.getElementById('statCorrect').innerText = correctCount;
+            document.getElementById('statWrong').innerText = wrongCount;
+
+            const accuracy = answeredCount > 0 ? ((correctCount / answeredCount) * 100).toFixed(1) : '0.0';
+            document.getElementById('statAccuracy').innerText = `${accuracy} %`;
+
+            // Progress bar
+            const totalCount = questions.length;
+            const progressPct = (answeredCount / totalCount) * 100;
+            document.getElementById('progressBar').style.width = `${progressPct}%`;
+            document.getElementById('questionCounterText').innerText = `Otázka ${activeIndex + 1} / ${totalCount}`;
+
+            // Filter button text update
+            document.getElementById('filterBtnText').innerText = `Filtr chyb (${errorIndices.length})`;
+
+            // Calculate OA Grade
+            // OA Scale: 100-90% -> 1, 89-75% -> 2, 74-60% -> 3, 59-45% -> 4, <45% -> 5
+            const totalAccuracyPct = totalCount > 0 ? (correctCount / totalCount) * 100 : 0;
+            let grade = 5;
+            let gradeText = "Nedostatečný";
+            let gradeColor = "text-rose-400 border-rose-400";
+
+            if (totalAccuracyPct >= 90) {
+                grade = 1; gradeText = "1 - Výborný"; gradeColor = "text-emerald-400 border-emerald-400";
+            } else if (totalAccuracyPct >= 75) {
+                grade = 2; gradeText = "2 - Chvalitebný"; gradeColor = "text-blue-400 border-blue-400";
+            } else if (totalAccuracyPct >= 60) {
+                grade = 3; gradeText = "3 - Dobrý"; gradeColor = "text-amber-400 border-amber-400";
+            } else if (totalAccuracyPct >= 45) {
+                grade = 4; gradeText = "4 - Dostatečný"; gradeColor = "text-orange-400 border-orange-400";
+            } else {
+                grade = 5; gradeText = "5 - Nedostatečný"; gradeColor = "text-rose-500 border-rose-500";
+            }
+
+            const badge = document.getElementById('oaGradeBadge');
+            const txt = document.getElementById('oaGradeText');
+
+            if (answeredCount === 0) {
+                badge.innerText = '-';
+                txt.innerText = 'Příprava...';
+                badge.className = "w-10 h-10 rounded-full bg-slate-800 border-2 border-slate-600 flex items-center justify-center font-extrabold text-slate-400 text-lg shadow";
+            } else {
+                badge.innerText = grade;
+                txt.innerText = gradeText;
+                badge.className = `w-10 h-10 rounded-full bg-slate-800 border-2 flex items-center justify-center font-extrabold text-lg shadow ${gradeColor}`;
+            }
+        }
+
+        // NAVIGATION LOGIC
+        function navigateQuestion(direction) {
+            playSound('click');
+
+            if (isErrorFilterActive && errorIndices.length > 0) {
+                const currentPosInErrors = errorIndices.indexOf(activeIndex);
+                if (currentPosInErrors !== -1) {
+                    let nextPos = currentPosInErrors + direction;
+                    if (nextPos >= 0 && nextPos < errorIndices.length) {
+                        activeIndex = errorIndices[nextPos];
+                        renderQuestion();
+                        return;
+                    }
+                }
+            }
+
+            let newIdx = activeIndex + direction;
+
+            if (newIdx < 0) {
+                newIdx = 0;
+            } else if (newIdx >= questions.length) {
+                openPrintModal();
+                return;
+            }
+
+            activeIndex = newIdx;
+            renderQuestion();
+        }
+
+        // RESHUFFLE QUESTIONS
+        function reshuffleQuestions() {
+            playSound('click');
+            // Shuffle questions and reset answers
+            for (let i = questions.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [questions[i], questions[j]] = [questions[j], questions[i]];
+            }
+            userAnswers = new Array(questions.length).fill(null);
+            activeIndex = 0;
+            isErrorFilterActive = false;
+            document.getElementById('filterErrorsBtn').classList.remove('bg-amber-600', 'border-amber-500');
+            renderQuestion();
+            updateStats();
+        }
+
+        // RESTART QUIZ
+        function restartQuiz() {
+            playSound('click');
+            userAnswers = new Array(questions.length).fill(null);
+            activeIndex = 0;
+            isErrorFilterActive = false;
+            document.getElementById('filterErrorsBtn').classList.remove('bg-amber-600', 'border-amber-500');
+            renderQuestion();
+            updateStats();
+        }
+
+        // TOGGLE ERROR FILTER MODE
+        function toggleErrorFilter() {
+            playSound('click');
+            if (errorIndices.length === 0) {
+                alert("Zatím nemáte žádné chybné odpovědi! Skvělá práce.");
+                return;
+            }
+
+            isErrorFilterActive = !isErrorFilterActive;
+            const btn = document.getElementById('filterErrorsBtn');
+
+            if (isErrorFilterActive) {
+                btn.classList.add('bg-amber-600', 'border-amber-500');
+                if (!errorIndices.includes(activeIndex)) {
+                    activeIndex = errorIndices[0];
+                }
+            } else {
+                btn.classList.remove('bg-amber-600', 'border-amber-500');
+            }
+
+            renderQuestion();
+            renderMapGrid();
+        }
+
+        // KEYBOARD SHORTCUTS
+        function setupKeyboardNav() {
+            document.addEventListener('keydown', (e) => {
+                if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+                const key = e.key.toUpperCase();
+
+                if (['A', '1'].includes(key)) {
+                    if (userAnswers[activeIndex] === null) selectOption(0);
+                } else if (['B', '2'].includes(key)) {
+                    if (userAnswers[activeIndex] === null) selectOption(1);
+                } else if (['C', '3'].includes(key)) {
+                    if (userAnswers[activeIndex] === null) selectOption(2);
+                } else if (['D', '4'].includes(key)) {
+                    if (userAnswers[activeIndex] === null) selectOption(3);
+                } else if (e.key === 'ArrowLeft') {
+                    if (activeIndex > 0) navigateQuestion(-1);
+                } else if (e.key === 'ArrowRight' || e.key === 'Enter') {
+                    navigateQuestion(1);
+                }
+            });
+        }
+
+        // PRINT PROTOCOL & MODAL LOGIC
+        function openPrintModal() {
+            playSound('click');
+
+            let correctCount = 0;
+            let answeredCount = 0;
+            userAnswers.forEach((ans, i) => {
+                if (ans !== null) {
+                    answeredCount++;
+                    if (ans === questions[i].spravnaIndex) correctCount++;
+                }
+            });
+
+            const pct = questions.length > 0 ? ((correctCount / questions.length) * 100).toFixed(1) : 0;
+            
+            let grade = 5;
+            let gradeLabel = "Nedostatečný";
+            if (pct >= 90) { grade = 1; gradeLabel = "Výborný"; }
+            else if (pct >= 75) { grade = 2; gradeLabel = "Chvalitebný"; }
+            else if (pct >= 60) { grade = 3; gradeLabel = "Dobrý"; }
+            else if (pct >= 45) { grade = 4; gradeLabel = "Dostatečný"; }
+
+            const summaryHTML = `
+                <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 space-y-2">
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-400">Celkový počet otázek:</span>
+                        <span class="font-bold text-white">${questions.length}</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-400">Zodpovězeno:</span>
+                        <span class="font-bold text-white">${answeredCount} z ${questions.length}</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-400">Správných odpovědí:</span>
+                        <span class="font-bold text-emerald-400">${correctCount}</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-400">Celková úspěšnost:</span>
+                        <span class="font-bold text-brand-300 text-base">${pct} %</span>
+                    </div>
+                    <div class="flex justify-between items-center pt-2 border-t border-slate-700">
+                        <span class="text-slate-300 font-semibold">Klasifikace Obchodní akademie:</span>
+                        <span class="font-extrabold text-amber-400 text-lg">${grade} (${gradeLabel})</span>
+                    </div>
+                </div>
+                <div class="text-xs text-slate-400">
+                    Kliknutím na tlačítko níže vytisknete detailní protokol včetně přehledu všech odpovědí a citací z výukového materiálu.
+                </div>
+            `;
+
+            document.getElementById('protocolPreviewContent').innerHTML = summaryHTML;
+            document.getElementById('printModal').classList.remove('hidden');
+
+            // Generate full printable DOM inside printContainer
+            generatePrintContainer(correctCount, pct, grade, gradeLabel);
+        }
+
+        function closePrintModal() {
+            playSound('click');
+            document.getElementById('printModal').classList.add('hidden');
+        }
+
+        function generatePrintContainer(correctCount, pct, grade, gradeLabel) {
+            const container = document.getElementById('printContainer');
+            const dateStr = new Date().toLocaleDateString('cs-CZ', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+            let questionsListHTML = '';
+            const labels = ['A', 'B', 'C', 'D'];
+
+            questions.forEach((q, idx) => {
+                const userAns = userAnswers[idx];
+                const isCorrect = userAns === q.spravnaIndex;
+                const statusBadge = userAns === null 
+                    ? '<span style="color:#666;">NEZODPOVĚZENO</span>'
+                    : (isCorrect ? '<span style="color:#059669; font-weight:bold;">SPRÁVNĚ</span>' : '<span style="color:#dc2626; font-weight:bold;">CHYBNĚ</span>');
+
+                questionsListHTML += `
+                    <div class="print-card" style="margin-bottom: 16px; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px;">
+                        <div style="display:flex; justify-content:space-between; margin-bottom: 6px; font-size: 12px; color: #475569;">
+                            <span><strong>Otázka ${idx + 1} z ${questions.length}</strong> | ${q.kategorie}</span>
+                            <span>${statusBadge}</span>
+                        </div>
+                        <div style="font-size: 14px; font-weight: bold; margin-bottom: 8px; color: #0f172a;">${q.otazka}</div>
+                        <div style="font-size: 12px; margin-bottom: 6px;">
+                            ${q.moznosti.map((opt, i) => {
+                                let style = "padding: 4px 8px; margin: 2px 0; border-radius: 4px;";
+                                if (i === q.spravnaIndex) {
+                                    style += " background-color: #d1fae5; color: #065f46; font-weight: bold;";
+                                } else if (i === userAns) {
+                                    style += " background-color: #ffe4e6; color: #9f1239;";
+                                } else {
+                                    style += " color: #475569;";
+                                }
+                                return `<div style="${style}">${labels[i]}) ${opt}</div>`;
+                            }).join('')}
+                        </div>
+                        <div style="font-size: 11px; color: #334155; margin-top: 6px; padding-top: 6px; border-top: 1px dashed #cbd5e1;">
+                            <strong>Citace z materiálu:</strong> "${q.citace}"
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = `
+                <div style="border-bottom: 2px solid #0284c7; padding-bottom: 12px; margin-bottom: 20px;">
+                    <h1 style="font-size: 22px; font-weight: bold; color: #0f172a; margin: 0;">TISKOVÝ PROTOKOL TESTU ÚČETNICTVÍ</h1>
+                    <h2 style="font-size: 16px; color: #0284c7; margin: 4px 0 0 0;">Téma: Platební styk</h2>
+                    <div style="font-size: 11px; color: #64748b; margin-top: 4px;">Vygenerováno: ${dateStr}</div>
+                </div>
+
+                <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 13px;">
+                    <tr style="background-color: #f8fafc;">
+                        <td style="padding: 8px; border: 1px solid #cbd5e1;"><strong>Celkem otázek:</strong> ${questions.length}</td>
+                        <td style="padding: 8px; border: 1px solid #cbd5e1;"><strong>Správné odpovědi:</strong> ${correctCount}</td>
+                        <td style="padding: 8px; border: 1px solid #cbd5e1;"><strong>Úspěšnost:</strong> ${pct} %</td>
+                        <td style="padding: 8px; border: 1px solid #cbd5e1;"><strong>Známka (OA):</strong> <span style="font-size: 16px; font-weight: bold;">${grade} (${gradeLabel})</span></td>
+                    </tr>
+                </table>
+
+                <h3 style="font-size: 15px; font-weight: bold; margin-bottom: 12px; color: #0f172a;">Detailní přehled otázek a odpovědí:</h3>
+                ${questionsListHTML}
+            `;
+        }
+    </script>
+</body>
+</html>
